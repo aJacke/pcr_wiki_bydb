@@ -19,5 +19,5 @@
     待增加...
 
 ## 鸣谢
-感谢[wthee](https://github.com/wthee):[pcr-tool-sql-diff](https://github.com/wthee/pcr-tool-sql-diff)提供的数据库。
-感谢[Ice9Coffee](https://github.com/Ice9Coffee):[HoshinoBot](https://github.com/Ice9Coffee/HoshinoBot)的机器人框架。
+- 感谢[wthee](https://github.com/wthee):[pcr-tool-sql-diff](https://github.com/wthee/pcr-tool-sql-diff)提供的数据库。
+- 感谢[Ice9Coffee](https://github.com/Ice9Coffee):[HoshinoBot](https://github.com/Ice9Coffee/HoshinoBot)的机器人框架。
