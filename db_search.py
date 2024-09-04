@@ -3,6 +3,8 @@ import asyncio
 import peewee
 from zhconv import convert
 
+from . import skill_action as sa
+
 talent_list = {
     1 : '火',
     2 : '水',
@@ -10,6 +12,9 @@ talent_list = {
     4 : '光',
     5 : '暗',
 }
+
+# 默认角色
+default_unit_lvl = 316
 
 # 创建查找的类别
 class Search_Type():
@@ -63,6 +68,9 @@ class Search_Type():
     
     def skill_data_search(self, return_type, value, search_type = 'skill_id'):
         return self._search(skill_data, search_type, return_type, value)
+    
+    def skill_action_search(self, return_type, value, search_type = 'action_id'):
+        return self._search(skill_action, search_type, return_type, value)
 
     def name(self):
         return '名称：' + self.unit_profile_search('unit_name')
@@ -104,11 +112,11 @@ class Search_Type():
 
     def description(self):
         return '简介：' + self.unit_data_search('comment').replace('\n', '')
-    
-    def skill_ub(self):
+
+    def skill_ub(self): # Union Burst
         # 常规ub和6星强化ub
         union_burst_list = ['union_burst', 'union_burst_evolution']
-        ub_result = ''
+        ub_result = '============================='
         for skill_type in union_burst_list:
             skill_id = self.unit_skill_data_search(skill_type)
             if not skill_id:
@@ -119,23 +127,109 @@ class Search_Type():
             skill_desc = skill_desc.replace('\n', '')
             ub_result += f'img:{icon_type}'
             if skill_type == 'union_burst':
-                ub_result += f'UB：{skill_name}\n效果：\n{skill_desc}\n'
+                ub_result += f'UB：{skill_name}\n效果：\n{skill_desc}'
             else:
-                ub_result += f'6星UB：{skill_name}\n效果：\n{skill_desc}\n'
+                ub_result += f'6星UB：{skill_name}\n效果：\n{skill_desc}'
         return ub_result
     
-    def skill(self):
+    def skill_ms(self): # Main Skill
         # 主动技能和专武强化技能
-        main_skill_list = ['main_skill_1', 'main_skill_2', 'main_skill_evolution_1', 'main_skill_evolution_2']
+        main_skill_list = ['main_skill_1', 'main_skill_evolution_1', 'main_skill_2', 'main_skill_evolution_2']
+        ms_result = '============================='
+        for skill_type in main_skill_list:
+            skill_id = self.unit_skill_data_search(skill_type)
+            if not skill_id:
+                continue
+            icon_type = self.skill_data_search('icon_type', skill_id)
+            skill_name = self.skill_data_search('name', skill_id)
+            skill_desc = self.skill_data_search('description', skill_id)
+            skill_desc = skill_desc.replace('\n', '')
+            ms_result += f'img:{icon_type}'
+            if 'evolution' in skill_type:
+                ms_result += f'专武强化{skill_type[-1]}技能：{skill_name}\n效果：\n{skill_desc}'
+            else:
+                ms_result += f'{skill_type[-1]}技能：{skill_name}\n效果：\n{skill_desc}'
+        return ms_result
+            
+    def skill_ex(self): # Ex Skill
         # ex技能和5星强化ex技能
         ex_skill_list = ['ex_skill_1', 'ex_skill_evolution_1']
+        ex_result = '============================='
+        for skill_type in ex_skill_list:
+            skill_id = self.unit_skill_data_search(skill_type)
+            if not skill_id:
+                continue
+            icon_type = self.skill_data_search('icon_type', skill_id)
+            skill_name = self.skill_data_search('name', skill_id)
+            skill_desc = self.skill_data_search('description', skill_id)
+            skill_desc = skill_desc.replace('\n', '')
+            ex_result += f'img:{icon_type}'
+            if skill_type == 'ex_skill_1':
+                ex_result += f'ex技能：{skill_name}\n效果：\n{skill_desc}'
+            else:
+                ex_result += f'5星强化ex技能：{skill_name}\n效果：\n{skill_desc}'
+        return ex_result
+    
+    def skill_sp(self): # SP Skill
         # sp技能
         sp_skill_list = ['sp_skill_1','sp_skill_2','sp_skill_3','sp_skill_4','sp_skill_5']
-        # 从unit_skill_data表中找到对应技能的skill_id,没有就跳过
-        skill_result = ''
-        skill_result += self.skill_ub()
-        
-        return skill_result
+        sp_result = ''
+        for skill_type in sp_skill_list:
+            skill_id = self.unit_skill_data_search(skill_type)
+            if not skill_id:
+                continue
+            icon_type = self.skill_data_search('icon_type', skill_id)
+            skill_name = self.skill_data_search('name', skill_id)
+            skill_desc = self.skill_data_search('description', skill_id)
+            skill_desc = skill_desc.replace('\n', '')
+            sp_result += f'img:{icon_type}'
+            sp_result += f'sp技能{skill_type[-1]}：{skill_name}\n效果：\n{skill_desc}'
+        if sp_result == '':
+            return ''
+        sp_result = '=============================' + sp_result
+        return sp_result
+    
+    def skill_action_list_search(self, action_id):
+        skill_action_list = {}
+        skill_action_list['action_type'] = self.skill_action_search('action_type', action_id)
+        skill_action_list['action_detail_1'] = self.skill_action_search('action_detail_1', action_id)
+        skill_action_list['action_detail_2'] = self.skill_action_search('action_detail_2', action_id)
+        skill_action_list['action_detail_3'] = self.skill_action_search('action_detail_3', action_id)
+        skill_action_list['action_value_1'] = self.skill_action_search('action_value_1', action_id)
+        skill_action_list['action_value_2'] = self.skill_action_search('action_value_2', action_id)
+        skill_action_list['action_value_3'] = self.skill_action_search('action_value_3', action_id)
+        skill_action_list['action_value_4'] = self.skill_action_search('action_value_4', action_id)
+        skill_action_list['action_value_5'] = self.skill_action_search('action_value_5', action_id)
+        skill_action_list['action_value_6'] = self.skill_action_search('action_value_6', action_id)
+        skill_action_list['action_value_7'] = self.skill_action_search('action_value_7', action_id)
+        skill_action_list['target_assignment'] = self.skill_action_search('target_assignment', action_id)
+        skill_action_list['target_area'] = self.skill_action_search('target_area', action_id)
+        skill_action_list['target_range'] = self.skill_action_search('target_range', action_id)
+        skill_action_list['target_type'] = self.skill_action_search('target_type', action_id)
+        skill_action_list['target_number'] = self.skill_action_search('target_number', action_id)
+        skill_action_list['target_count'] = self.skill_action_search('target_count', action_id)
+        skill_action_list['description'] = self.skill_action_search('description', action_id)
+        skill_action_list['level_up_disp'] = self.skill_action_search('level_up_disp', action_id)
+        return skill_action_list
+    
+    def skill_action(self, skill_id):
+        action_id_list = []
+        for i in range(1, 11):
+            action_id = self.skill_data_search(f'action_{i}', skill_id)
+            if not action_id:
+                continue
+            action_id_list.append(action_id)
+        if not action_id_list:
+            return f'什么都没找到，请至github上提交issue，技能ID：{skill_id}'
+        skill_action_result = ''
+        for action_id in action_id_list:
+            sal = self.skill_action_list_search(action_id)
+            sac = sa(sal['action_id'], sal['action_detail_1'], sal['action_detail_2'], sal['action_detail_3'], sal['action_value_1'], 
+                     sal['action_value_2'], sal['action_value_3'], sal['action_value_4'], sal['action_value_5'], sal['action_value_6'], sal['action_value_7'], 
+                     sal['target_assignment'], sal['target_area'], sal['target_range'], sal['target_type'], sal['target_number'], sal['target_count'], 
+                     sal['description'], sal['level_up_disp'])
+            skill_action_result += sac.action_type(sal['action_type'])
+            pass
 
 # 定义表
 class BaseModel(peewee.Model):
@@ -261,6 +355,29 @@ class skill_data(BaseModel):
     depend_action_10 = peewee.IntegerField()
     description = peewee.CharField()
     icon_type = peewee.IntegerField()
+
+class skill_action(BaseModel):
+    action_id = peewee.IntegerField(primary_key=True)
+    class_id = peewee.IntegerField()
+    action_type = peewee.IntegerField()
+    action_detail_1 = peewee.IntegerField()
+    action_detail_2 = peewee.IntegerField()
+    action_detail_3 = peewee.IntegerField()
+    action_value_1 = peewee.FloatField()
+    action_value_2 = peewee.FloatField()
+    action_value_3 = peewee.FloatField()
+    action_value_4 = peewee.FloatField()
+    action_value_5 = peewee.FloatField()
+    action_value_6 = peewee.FloatField()
+    action_value_7 = peewee.FloatField()
+    target_assignment = peewee.IntegerField()
+    target_area = peewee.IntegerField()
+    target_range = peewee.IntegerField()
+    target_type = peewee.IntegerField()
+    target_number = peewee.IntegerField()
+    target_count = peewee.IntegerField()
+    description = peewee.CharField()
+    level_up_disp = peewee.CharField()
 
 # 测试
 if __name__ == '__main__':

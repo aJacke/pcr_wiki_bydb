@@ -80,14 +80,17 @@ async def chara_intro(bot, ev):
     # 创建查找对象列表
     search_list = [
         'name',
-        'skill_ub'
+        'skill_ub',
+        'skill_ms',
+        'skill_ex',
+        'skill_sp'
         ]
     # 开始查找
     result = ''
     result += f'{c.icon.cqcode}'
     result_img = msg.msg_process(uid, search_list)
     beg = 0
-    while result_img.find('img', beg) is not -1:
+    while result_img.find('img', beg) != -1:
         index = result_img.find('img', beg)
         icon_id = result_img[index+4:index+8]
         img = result_img[index:index+8]
