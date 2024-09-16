@@ -1,13 +1,25 @@
 import peewee
 
+# defualt chara data updataed on 2024/09/05
+default_chara_data = {
+    'level' : 254,
+    'rank' : 26,
+    'star' : 5,
+    'unique_level' : 260,
+    'ex_level' : 254,
+    'chara_story_list' : None
+}
+
 class chara_calculator:
-    def __init__(self, unit_id, level, rank, star, unique_level, ex_level, cn_db, tw_db, jp_db):
+    def __init__(self, unit_id, cn_db, tw_db, jp_db, level = default_chara_data['level'], rank = default_chara_data['rank'], star = default_chara_data['star'],
+                 unique_level = default_chara_data['unique_level'], ex_level = default_chara_data['ex_level'], chara_story_list = default_chara_data['chara_story_list']):
         self.unit_id = unit_id
         self.level = level
         self.rank = rank
         self.star = star
         self.unique_level = unique_level
         self.ex_level = ex_level
+        self.chara_story_list = chara_story_list
         self.cn_db = cn_db
         self.tw_db = tw_db
         self.jp_db = jp_db
@@ -77,7 +89,7 @@ class chara_calculator:
             return None
         try:
             ueq_2 = self.unit_unique_equipment_search('equip_id', 2)
-            if (ueq_2 % 10 != 2) | (ueq_2 // 10 % 1000 != self.unit_id // 100 % 1000):
+            if (ueq_2 % 10 != 2) or (ueq_2 // 10 % 1000 != self.unit_id // 100 % 1000):
                 return [ueq_1]
         except:
             return [ueq_1]
@@ -349,10 +361,19 @@ class chara_calculator:
                 story_chara_id_list.append(story_chara_id)
             else:
                 break
+        
         for story_chara_id in story_chara_id_list:
             story_arr = 2
             chara_status_dict = {}
-            while story_arr < 13:
+            # 角色好感自定义列表
+            # 格式：[{'chara_id': num}, {'chara_id': num}, {'chara_id': num}, ...]
+            if self.chara_story_list is not None:
+                for chara_id, num in self.chara_story_list.items():
+                    if int(chara_id) == story_chara_id:
+                        story_arr_top = num
+            else:                
+                story_arr_top = 13
+            while story_arr < story_arr_top:
                 status_type_list = []
                 status_rate_list = []
                 for i in range(1, 6):
@@ -406,6 +427,7 @@ class chara_calculator:
         i = 0
         for equip in equip_list:
             if equip == 999999:
+                i += 1 
                 continue
             equip_promotion_level = self.get_equipment_promotion_level(equip)
             if equip_level[i] > equip_promotion_level:
@@ -476,7 +498,7 @@ class chara_calculator:
         if self.star  < 5:
             action_id = self.unit_id // 100 * 100000 + 50101
         else:
-            action_id = self.unit_id // 100 * 10000 + 51101
+            action_id = self.unit_id // 100 * 100000 + 51101
         ex_type = self.skill_action_search('action_detail_1', action_id)
         value_1 = self.skill_action_search('action_value_2', action_id)
         value_2 = self.skill_action_search('action_value_3', action_id)
@@ -484,7 +506,7 @@ class chara_calculator:
 
 # 全数值处理计算
     def calculate_all_value(self):
-        list_of_equip = [1, 1, 1, 1, 1, 1]
+        list_of_equip = [0, 5, 0, 5, 0, 5]
         unit_rarity_value, unit_rarity_growth = self.get_unit_rarity()
         unique_equipment_data_value = self.get_unique_equipment_data()
         unique_equipment_enhance_rate_value = self.get_unique_equipment_enhance_rate()
@@ -659,6 +681,26 @@ class chara_calculator:
             magic_critical += ex_skill_level_value[1] + ex_skill_level_value[2] * self.ex_level
         else:
             return f'EX技能类型错误，角色ID：{self.unit_id}。请至github反馈'
+        # 属性打包
+        result_dict = {
+            'hp': hp,
+            'atk': atk,
+            'def': def_,
+            'magic_str': magic_str,
+            'magic_def': magic_def,
+            'physical_critical': physical_critical,
+            'magic_critical': magic_critical,
+            'wave_hp_recovery': wave_hp_recovery,
+            'wave_energy_recovery': wave_energy_recovery,
+            'dodge': dodge,
+            'physical_penetrate': physical_penetrate,
+            'magic_penetrate': magic_penetrate,
+            'life_steal': life_steal,
+            'hp_recovery_rate': hp_recovery_rate,
+            'energy_recovery_rate': energy_recovery_rate,
+            'energy_reduce_rate': energy_reduce_rate,
+            'accuracy': accuracy
+        }
         # 属性转义中文输出
         result = ''
         result += f'HP: {hp}\n'
@@ -715,7 +757,7 @@ class chara_calculator:
         result += f'{self.unique_level}\n'
         result += 'EX技能等级：\n'
         result += f'{self.ex_level}\n'
-        return result
+        return result, result_dict
 
 
 # 计算方法为：角色星级基础值 + 角色星级提升值 * (lvl + rank_lvl) + 角色专武基础值 + 角色专武提升值 * (lvl - 1) + 角色rank提升值 + 角色rb提升值 + 
@@ -1045,7 +1087,7 @@ if __name__ == '__main__':
     tw_db = peewee.SqliteDatabase(tw_db_path)
     jp_db = peewee.SqliteDatabase(jp_db_path)
 
-    c = chara_calculator(100101, 2, 1, 1, 1, 1, cn_db, tw_db, jp_db)
+    c = chara_calculator(100101, cn_db, tw_db, jp_db, 254, 26, 6, 290, 254)
     # print(c.get_unit_rarity())
     # print(c.get_unique_equipment_data())
     # print(c.get_unique_equipment_enhance_rate())

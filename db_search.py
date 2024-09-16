@@ -3,7 +3,7 @@ import asyncio
 import peewee
 from zhconv import convert
 
-from . import skill_action as sa
+from . import skill_action as sa, chara_stats_calculator as csc
 
 talent_list = {
     1 : '火',
@@ -23,6 +23,7 @@ class Search_Type():
         self.cn_db = cn_db
         self.tw_db = tw_db
         self.jp_db = jp_db
+        self.chara_dict = {}
 
     def _search(self, model, search_type, return_type, value=None):
         databases = [self.cn_db, self.tw_db, self.jp_db]
@@ -116,7 +117,7 @@ class Search_Type():
     def skill_ub(self): # Union Burst
         # 常规ub和6星强化ub
         union_burst_list = ['union_burst', 'union_burst_evolution']
-        ub_result = '============================='
+        ub_result = '\n============================='
         for skill_type in union_burst_list:
             skill_id = self.unit_skill_data_search(skill_type)
             if not skill_id:
@@ -127,15 +128,17 @@ class Search_Type():
             skill_desc = skill_desc.replace('\n', '')
             ub_result += f'img:{icon_type}'
             if skill_type == 'union_burst':
-                ub_result += f'UB：{skill_name}\n效果：\n{skill_desc}'
+                ub_result += f'UB：{skill_name}\n描述：\n{skill_desc}'
+                ub_result += self.skill_action(skill_id)
             else:
-                ub_result += f'6星UB：{skill_name}\n效果：\n{skill_desc}'
+                ub_result += f'6星UB：{skill_name}\n描述：\n{skill_desc}'
+                ub_result += self.skill_action(skill_id)
         return ub_result
     
     def skill_ms(self): # Main Skill
         # 主动技能和专武强化技能
         main_skill_list = ['main_skill_1', 'main_skill_evolution_1', 'main_skill_2', 'main_skill_evolution_2']
-        ms_result = '============================='
+        ms_result = '\n============================='
         for skill_type in main_skill_list:
             skill_id = self.unit_skill_data_search(skill_type)
             if not skill_id:
@@ -146,15 +149,17 @@ class Search_Type():
             skill_desc = skill_desc.replace('\n', '')
             ms_result += f'img:{icon_type}'
             if 'evolution' in skill_type:
-                ms_result += f'专武强化{skill_type[-1]}技能：{skill_name}\n效果：\n{skill_desc}'
+                ms_result += f'专武强化技能{skill_type[-1]}：{skill_name}\n描述：\n{skill_desc}'
+                ms_result += self.skill_action(skill_id)
             else:
-                ms_result += f'{skill_type[-1]}技能：{skill_name}\n效果：\n{skill_desc}'
+                ms_result += f'技能{skill_type[-1]}：{skill_name}\n描述：\n{skill_desc}'
+                ms_result += self.skill_action(skill_id)
         return ms_result
             
     def skill_ex(self): # Ex Skill
         # ex技能和5星强化ex技能
         ex_skill_list = ['ex_skill_1', 'ex_skill_evolution_1']
-        ex_result = '============================='
+        ex_result = '\n============================='
         for skill_type in ex_skill_list:
             skill_id = self.unit_skill_data_search(skill_type)
             if not skill_id:
@@ -165,9 +170,11 @@ class Search_Type():
             skill_desc = skill_desc.replace('\n', '')
             ex_result += f'img:{icon_type}'
             if skill_type == 'ex_skill_1':
-                ex_result += f'ex技能：{skill_name}\n效果：\n{skill_desc}'
+                ex_result += f'ex技能：{skill_name}\n描述：\n{skill_desc}'
+                ex_result += self.skill_action(skill_id)
             else:
-                ex_result += f'5星强化ex技能：{skill_name}\n效果：\n{skill_desc}'
+                ex_result += f'5星强化ex技能：{skill_name}\n描述：\n{skill_desc}'
+                ex_result += self.skill_action(skill_id)
         return ex_result
     
     def skill_sp(self): # SP Skill
@@ -183,12 +190,19 @@ class Search_Type():
             skill_desc = self.skill_data_search('description', skill_id)
             skill_desc = skill_desc.replace('\n', '')
             sp_result += f'img:{icon_type}'
-            sp_result += f'sp技能{skill_type[-1]}：{skill_name}\n效果：\n{skill_desc}'
+            sp_result += f'sp技能{skill_type[-1]}：{skill_name}\n描述：\n{skill_desc}'
+            sp_result += self.skill_action(skill_id)
         if sp_result == '':
             return ''
-        sp_result = '=============================' + sp_result
+        sp_result = '\n=============================' + sp_result
         return sp_result
     
+    def chara_stats(self, search_list):
+        n, chara_stats_dict = csc.chara_calculator(self.uid, self.cn_db, self.tw_db, self.jp_db, default_unit_lvl).calculate_all_value()
+        for search_type in search_list:
+            self.chara_dict[search_type] = chara_stats_dict[search_type]
+        return self.chara_dict
+
     def skill_action_list_search(self, action_id):
         skill_action_list = {}
         skill_action_list['action_type'] = self.skill_action_search('action_type', action_id)
@@ -214,22 +228,28 @@ class Search_Type():
     
     def skill_action(self, skill_id):
         action_id_list = []
+        depend_action_dict = {}
         for i in range(1, 11):
             action_id = self.skill_data_search(f'action_{i}', skill_id)
             if not action_id:
-                continue
+                break
+            depend_action_id = self.skill_data_search(f'depend_action_{i}', skill_id)
+            if depend_action_id:
+                depend_action_dict[action_id] = depend_action_id
             action_id_list.append(action_id)
         if not action_id_list:
             return f'什么都没找到，请至github上提交issue，技能ID：{skill_id}'
-        skill_action_result = ''
+        skill_action_result = '\n效果：'
+        self.chara_stats(['atk', 'magic_str'])
         for action_id in action_id_list:
+            skill_action_result += '\n'
             sal = self.skill_action_list_search(action_id)
-            sac = sa(sal['action_id'], sal['action_detail_1'], sal['action_detail_2'], sal['action_detail_3'], sal['action_value_1'], 
+            sac = sa.SkillAction(action_id, sal['action_detail_1'], sal['action_detail_2'], sal['action_detail_3'], sal['action_value_1'], 
                      sal['action_value_2'], sal['action_value_3'], sal['action_value_4'], sal['action_value_5'], sal['action_value_6'], sal['action_value_7'], 
                      sal['target_assignment'], sal['target_area'], sal['target_range'], sal['target_type'], sal['target_number'], sal['target_count'], 
-                     sal['description'], sal['level_up_disp'])
+                     sal['description'], sal['level_up_disp'], default_unit_lvl, self.chara_dict['atk'], self.chara_dict['magic_str'], depend_action_dict[action_id] if action_id in depend_action_dict else None)
             skill_action_result += sac.action_type(sal['action_type'])
-            pass
+        return skill_action_result
 
 # 定义表
 class BaseModel(peewee.Model):

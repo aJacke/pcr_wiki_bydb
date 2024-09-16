@@ -19,7 +19,7 @@ def msg_process(uid, search_list):
     search_obj = db_search.Search_Type(uid, cn_db, tw_db, jp_db)
     result = ''
     for search in search_list:
-        result += convert(getattr(search_obj, search)(),'zh-cn') + '\n'
+        result += convert(getattr(search_obj, search)(),'zh-cn')
     return result
 
 if __name__ == '__main__':
