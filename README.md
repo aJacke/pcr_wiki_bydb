@@ -2,6 +2,7 @@
 
 使用游戏数据库进行查询的PCR Wiki。
 <font color=grey>数据库来源:[pcr-tool-sql-diff](https://github.com/wthee/pcr-tool-sql-diff)</font>
+
 摆烂太久就会有大佬做出来(bushi)指路:https://github.com/SonderXiaoming/kanna_note
 
 ## 功能
